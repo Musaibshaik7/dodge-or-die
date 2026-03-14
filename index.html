@@ -66,6 +66,41 @@ canvas { display:block; cursor:crosshair; }
 </style>
 </head>
 <body>
+  <div id="intro-overlay" style="
+position:fixed;
+inset:0;
+background:#000;
+display:flex;
+justify-content:center;
+align-items:center;
+z-index:9999;
+color:white;
+font-family:monospace;
+text-align:center;
+">
+
+<div>
+<h1 style="color:#00ffcc;font-size:50px;letter-spacing:6px;">
+DODGE OR DIE
+</h1>
+
+<p>Move using WASD or Arrow Keys</p>
+<p>Click or Tap anywhere to move</p>
+<p>Dodge obstacles. Survive.</p>
+
+<button id="start-btn" style="
+margin-top:20px;
+padding:12px 30px;
+font-size:20px;
+background:#00ffcc;
+border:none;
+cursor:pointer;
+">
+START
+</button>
+
+</div>
+</div>
 <canvas id="c"></canvas>
 <div id="vignette"></div>
 
@@ -120,8 +155,32 @@ canvas { display:block; cursor:crosshair; }
 </div>
 
 <div id="joystick-zone"></div><div id="joystick-base"></div><div id="joystick-thumb"></div>
+<div id="intro-overlay">
+  <div class="intro-box">
+    <h1>DODGE OR DIE</h1>
+    <p>Move using <b>WASD</b> or <b>Arrow Keys</b></p>
+    <p>Or <b>Click / Tap</b> anywhere to move</p>
+    <p>Dodge obstacles. Survive. Level up.</p>
+    <button id="start-btn">START</button>
+  </div>
+</div>
 
 <script>
+  window.onload = () => {
+
+const introOverlay = document.getElementById("intro-overlay");
+const startBtn = document.getElementById("start-btn");
+
+if (localStorage.getItem("dod_intro_seen")) {
+  introOverlay.style.display = "none";
+}
+
+startBtn.onclick = () => {
+  introOverlay.style.display = "none";
+  localStorage.setItem("dod_intro_seen", "yes");
+};
+
+  };
 // Global functions — must be outside window.onload for HTML onclick attributes
 let currentShape = 'square';
 function setShape(shape, btn) {
