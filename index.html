@@ -63,44 +63,62 @@ canvas { display:block; cursor:crosshair; }
 #shape-selector button:hover  { background:rgba(255,255,255,.22); border-color:rgba(255,255,255,.5); }
 #shape-selector button.active { background:rgba(0,255,204,.35); border-color:#00ffcc; box-shadow:0 0 12px rgba(0,255,204,.4); }
 #joystick-zone,#joystick-base,#joystick-thumb,#back-btn { display:none !important; }
+
+/* ── How-to-play popup ── */
+#how-to-play {
+  position:fixed; inset:0; z-index:99;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.88);
+  backdrop-filter:blur(4px);
+  transition:opacity .35s ease;
+}
+#how-to-play.hidden { opacity:0; pointer-events:none; }
+#htp-box {
+  text-align:center;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.04);
+  border-radius:16px;
+  padding:48px 52px 40px;
+  max-width:420px; width:90%;
+  box-shadow:0 0 60px rgba(0,255,204,.08);
+}
+#htp-title {
+  font-size:28px; font-weight:bold; letter-spacing:8px;
+  color:#00ffcc; text-shadow:0 0 40px #00ffcc;
+  margin-bottom:32px;
+}
+.htp-row {
+  display:flex; align-items:center; gap:16px;
+  margin-bottom:18px;
+}
+.htp-icon {
+  font-size:24px; width:40px; text-align:center; flex-shrink:0;
+}
+.htp-text {
+  font-size:12px; letter-spacing:3px; color:rgba(255,255,255,.6);
+  text-align:left; line-height:1.6;
+}
+.htp-text strong { color:#fff; }
+#htp-divider {
+  width:100%; height:1px; background:rgba(255,255,255,.08);
+  margin:24px 0;
+}
+#htp-enter {
+  margin-top:8px;
+  width:100%; padding:14px 0;
+  background:rgba(0,255,204,.12); border:1px solid rgba(0,255,204,.35);
+  border-radius:8px; color:#00ffcc; font-family:'Courier New',monospace;
+  font-size:13px; letter-spacing:5px; font-weight:bold; cursor:pointer;
+  transition:background .15s, box-shadow .15s;
+}
+#htp-enter:hover {
+  background:rgba(0,255,204,.22);
+  box-shadow:0 0 20px rgba(0,255,204,.2);
+}
+
 </style>
 </head>
 <body>
-  <div id="intro-overlay" style="
-position:fixed;
-inset:0;
-background:#000;
-display:flex;
-justify-content:center;
-align-items:center;
-z-index:9999;
-color:white;
-font-family:monospace;
-text-align:center;
-">
-
-<div>
-<h1 style="color:#00ffcc;font-size:50px;letter-spacing:6px;">
-DODGE OR DIE
-</h1>
-
-<p>Move using WASD or Arrow Keys</p>
-<p>Click or Tap anywhere to move</p>
-<p>Dodge obstacles. Survive.</p>
-
-<button id="start-btn" style="
-margin-top:20px;
-padding:12px 30px;
-font-size:20px;
-background:#00ffcc;
-border:none;
-cursor:pointer;
-">
-START
-</button>
-
-</div>
-</div>
 <canvas id="c"></canvas>
 <div id="vignette"></div>
 
@@ -136,6 +154,31 @@ START
   <div id="death-roast"></div>
 </div>
 
+<!-- How-to-play popup (shown once on load) -->
+<div id="how-to-play">
+  <div id="htp-box">
+    <div id="htp-title">HOW TO PLAY</div>
+    <div class="htp-row">
+      <div class="htp-icon">⌨️</div>
+      <div class="htp-text"><strong>W A S D</strong> or <strong>ARROW KEYS</strong><br>move your player</div>
+    </div>
+    <div class="htp-row">
+      <div class="htp-icon">🖱️</div>
+      <div class="htp-text"><strong>CLICK</strong> anywhere on screen<br>player moves to that point</div>
+    </div>
+    <div class="htp-row">
+      <div class="htp-icon">📱</div>
+      <div class="htp-text"><strong>TAP</strong> or <strong>DRAG</strong> on mobile<br>works the same way</div>
+    </div>
+    <div id="htp-divider"></div>
+    <div class="htp-row" style="justify-content:center;margin-bottom:0;">
+      <div class="htp-icon">⚡</div>
+      <div class="htp-text"><strong>DODGE</strong> everything.<br>Near misses give bonus points.</div>
+    </div>
+    <button id="htp-enter">ENTER →</button>
+  </div>
+</div>
+
 <div id="mode-screen">
   <div id="mode-title">DODGE OR DIE</div>
   <div id="mode-sub">SELECT MODE</div>
@@ -155,32 +198,8 @@ START
 </div>
 
 <div id="joystick-zone"></div><div id="joystick-base"></div><div id="joystick-thumb"></div>
-<div id="intro-overlay">
-  <div class="intro-box">
-    <h1>DODGE OR DIE</h1>
-    <p>Move using <b>WASD</b> or <b>Arrow Keys</b></p>
-    <p>Or <b>Click / Tap</b> anywhere to move</p>
-    <p>Dodge obstacles. Survive. Level up.</p>
-    <button id="start-btn">START</button>
-  </div>
-</div>
 
 <script>
-  window.onload = () => {
-
-const introOverlay = document.getElementById("intro-overlay");
-const startBtn = document.getElementById("start-btn");
-
-if (localStorage.getItem("dod_intro_seen")) {
-  introOverlay.style.display = "none";
-}
-
-startBtn.onclick = () => {
-  introOverlay.style.display = "none";
-  localStorage.setItem("dod_intro_seen", "yes");
-};
-
-  };
 // Global functions — must be outside window.onload for HTML onclick attributes
 let currentShape = 'square';
 function setShape(shape, btn) {
@@ -824,6 +843,24 @@ function startDemo(){
   mouse.hasTarget=false;mouse.active=false;mouse.markerAlpha=0;
   resetPlayer();bg.ox=0;bg.oy=0;$('ui').classList.add('hidden');
 }
+// ── How-to-play popup dismiss ─────────────────────────────────────────────
+(function(){
+  const htp = document.getElementById('how-to-play');
+  const btn = document.getElementById('htp-enter');
+  function dismiss(){
+    htp.classList.add('hidden');
+    // fully remove after fade so it can't block clicks
+    setTimeout(()=>{ htp.style.display='none'; }, 400);
+  }
+  btn.addEventListener('click', dismiss);
+  window.addEventListener('keydown', function onEnter(e){
+    if(e.code==='Enter'||e.code==='Space'){
+      dismiss();
+      window.removeEventListener('keydown', onEnter);
+    }
+  });
+})();
+
 startDemo();
 
 // ── Main loop ─────────────────────────────────────────────────────────────
