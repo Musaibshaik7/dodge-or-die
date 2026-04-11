@@ -572,6 +572,30 @@ function drawShape(cx,cy,size,shape,rot){
     case 'diamond':ctx.beginPath();ctx.moveTo(0,-size*1.3);ctx.lineTo(size*0.9,0);ctx.lineTo(0,size*1.3);ctx.lineTo(-size*0.9,0);ctx.closePath();ctx.fill();break;
     case 'cross':{const t=size*0.38,h=size;ctx.fillRect(-t,-h,t*2,h*2);ctx.fillRect(-h,-t,h*2,t*2);break;}
     case 'arrow':ctx.beginPath();ctx.moveTo(0,-size*1.2);ctx.lineTo(size*0.9,size*0.3);ctx.lineTo(size*0.4,size*0.3);ctx.lineTo(size*0.4,size*1.1);ctx.lineTo(-size*0.4,size*1.1);ctx.lineTo(-size*0.4,size*0.3);ctx.lineTo(-size*0.9,size*0.3);ctx.closePath();ctx.fill();break;
+    case 'fireball':{
+      // Core circle
+      ctx.beginPath();ctx.arc(0,0,size*0.72,0,Math.PI*2);ctx.fill();
+      // Flame spikes radiating out
+      const fc=ctx.fillStyle;ctx.fillStyle='rgba(255,180,0,0.85)';
+      for(let i=0;i<7;i++){const fa=i/7*Math.PI*2+rot*0.4,fr=size*0.55,fl=size*1.22,fw=size*0.22;ctx.beginPath();ctx.ellipse(Math.cos(fa)*fr,Math.sin(fa)*fr,fw,fl,fa,0,Math.PI*2);ctx.fill();}
+      ctx.fillStyle=fc;
+      // Bright inner core
+      ctx.fillStyle='rgba(255,255,200,0.6)';ctx.beginPath();ctx.arc(0,0,size*0.3,0,Math.PI*2);ctx.fill();ctx.fillStyle=fc;
+      break;}
+    case 'rock':{
+      // Irregular polygon — looks like a jagged rock
+      const rpts=[[0,-1.15],[0.62,-0.88],[1.05,-0.28],[0.95,0.45],[0.38,1.0],[-0.42,1.05],[-1.0,0.4],[-1.08,-0.22],[-0.6,-0.9]];
+      ctx.beginPath();rpts.forEach(([rx,ry],ri)=>{ri===0?ctx.moveTo(rx*size,ry*size):ctx.lineTo(rx*size,ry*size);});ctx.closePath();ctx.fill();
+      // Dark cracks
+      ctx.strokeStyle='rgba(0,0,0,0.35)';ctx.lineWidth=size*0.09;
+      ctx.beginPath();ctx.moveTo(-size*0.3,-size*0.4);ctx.lineTo(size*0.15,size*0.2);ctx.moveTo(size*0.2,-size*0.1);ctx.lineTo(-size*0.1,size*0.5);ctx.stroke();
+      break;}
+    case 'crystal':{
+      // Hexagonal crystal shape with facets
+      ctx.beginPath();ctx.moveTo(0,-size*1.25);ctx.lineTo(size*0.65,-size*0.5);ctx.lineTo(size*0.65,size*0.5);ctx.lineTo(0,size*1.25);ctx.lineTo(-size*0.65,size*0.5);ctx.lineTo(-size*0.65,-size*0.5);ctx.closePath();ctx.fill();
+      // Inner bright facet
+      ctx.fillStyle='rgba(255,255,255,0.35)';ctx.beginPath();ctx.moveTo(0,-size*0.9);ctx.lineTo(size*0.42,-size*0.25);ctx.lineTo(0,size*0.2);ctx.lineTo(-size*0.42,-size*0.25);ctx.closePath();ctx.fill();
+      break;}
   }
   ctx.restore();
 }
@@ -629,25 +653,28 @@ const sfx={
 let coins=LS.getInt('dod_coins',0);
 let sessionCoins=0;
 const SKIN_SHOP=[
-  {id:'neon',name:'NEON',color:'#00ffcc',price:0},
-  {id:'fire',name:'FIRE',color:'#ff3c00',price:50},
-  {id:'purple',name:'PURPLE',color:'#a855f7',price:100},
-  {id:'gold',name:'GOLD',color:'#ffd700',price:200},
-  {id:'ice',name:'ICE',color:'#88ddff',price:300},
-  {id:'void',name:'VOID',color:'#aa44ff',price:500},
+  {id:'neon',  name:'NEON',  color:'#00ffcc',price:0},
+  {id:'fire',  name:'FIRE',  color:'#ff3c00',price:25},
+  {id:'purple',name:'PURPLE',color:'#a855f7',price:50},
+  {id:'gold',  name:'GOLD',  color:'#ffd700',price:100},
+  {id:'ice',   name:'ICE',   color:'#88ddff',price:150},
+  {id:'void',  name:'VOID',  color:'#aa44ff',price:250},
 ];
 const SHAPE_SHOP=[
-  {id:'square',name:'SQUARE',price:0},
-  {id:'circle',name:'CIRCLE',price:75},
-  {id:'triangle',name:'TRIANGLE',price:150},
-  {id:'heart',name:'HEART',price:200},
-  {id:'star',name:'STAR',price:250},
-  {id:'diamond',name:'DIAMOND',price:300},
-  {id:'cross',name:'CROSS',price:350},
-  {id:'arrow',name:'ARROW',price:400},
+  {id:'square',  name:'SQUARE',   price:0},
+  {id:'circle',  name:'CIRCLE',   price:0},
+  {id:'fireball',name:'FIREBALL', price:0},
+  {id:'rock',    name:'ROCK',     price:0},
+  {id:'triangle',name:'TRIANGLE', price:40},
+  {id:'heart',   name:'HEART',    price:70},
+  {id:'star',    name:'STAR',     price:100},
+  {id:'diamond', name:'DIAMOND',  price:130},
+  {id:'crystal', name:'CRYSTAL',  price:160},
+  {id:'cross',   name:'CROSS',    price:190},
+  {id:'arrow',   name:'ARROW',    price:220},
 ];
 let ownedSkins=new Set(LS.get('dod_owned_skins','neon').split(','));
-let ownedShapes=new Set(LS.get('dod_owned_shapes','square').split(','));
+let ownedShapes=new Set(LS.get('dod_owned_shapes','square,circle,fireball,rock').split(','));
 let currentSkin=LS.get('dod_skin','neon');
 _ownedShapes=ownedShapes;
 const SKINS={neon:'#00ffcc',fire:'#ff3c00',purple:'#a855f7',gold:'#ffd700',ice:'#88ddff',void:'#aa44ff'};
@@ -739,7 +766,7 @@ function updateVignette(it){
 }
 
 // ── Player ────────────────────────────────────────────────────────────────
-const P_SIZE=14,P_MAXSPD=280,P_ACCEL=1900;
+const P_SIZE=14,P_MAXSPD=210,P_ACCEL=1500;
 const player={x:0,y:0,vx:0,vy:0,trail:[],alive:true};
 function resetPlayer(){player.x=gW()/2;player.y=gH()/2;player.vx=0;player.vy=0;player.trail=[];player.alive=true;cam.x=0;cam.y=0;cam.tx=0;cam.ty=0;}
 
@@ -816,9 +843,12 @@ function activatePower(){
   $('power-bar-wrap').style.opacity='1';$('power-bar-label').textContent=labels[activePower]||activePower;
 }
 
+// ── Per-shape hitbox multipliers (tighter = more forgiving) ──────────────────
+const SHAPE_HIT={square:0.85,circle:1.0,triangle:0.78,heart:0.82,star:0.70,diamond:0.88,cross:0.75,arrow:0.75,fireball:0.90,rock:0.92,crystal:0.72};
+function getHitRadius(){return P_SIZE*(SHAPE_HIT[currentShape]||0.85);}
 // ── Collision ─────────────────────────────────────────────────────────────
-function hitTest(){if(activePower==='ghost')return false;const sz=activePower==='miniSize'?0.4:1;for(const obs of obstacles){if(Math.hypot(obs.x-player.x,obs.y-player.y)<(P_SIZE*sz)+obs.size-6)return true;}return false;}
-function nmTest(obs){const r=activePower==='magnet'?56:28;return Math.hypot(obs.x-player.x,obs.y-player.y)<P_SIZE+obs.size+r;}
+function hitTest(){if(activePower==='ghost')return false;const sz=activePower==='miniSize'?0.4:1;const hr=getHitRadius()*sz;for(const obs of obstacles){if(Math.hypot(obs.x-player.x,obs.y-player.y)<hr+obs.size-6)return true;}return false;}
+function nmTest(obs){const r=activePower==='magnet'?56:28;return Math.hypot(obs.x-player.x,obs.y-player.y)<getHitRadius()+obs.size+r;}
 
 // ── Pause ─────────────────────────────────────────────────────────────────
 function togglePause(){
@@ -1038,7 +1068,18 @@ function renderShop(){
     const owned=shopTab==='skins'?ownedSkins.has(item.id):ownedShapes.has(item.id),equipped=shopTab==='skins'?currentSkin===item.id:currentShape===item.id;
     const div=document.createElement('div');div.className='shop-item'+(equipped?' equipped':owned?' owned':' locked-item');
     if(shopTab==='skins'){div.innerHTML='<div class="shop-color" style="background:'+item.color+';box-shadow:0 0 8px '+item.color+'40;"></div><div class="shop-name">'+item.name+'</div>';}
-    else{const ic=document.createElement('canvas');ic.width=30;ic.height=30;ic.style.cssText='width:30px;height:30px;';const ix=ic.getContext('2d');ix.fillStyle='#fff';ix.save();ix.translate(15,15);switch(item.id){case 'square':ix.fillRect(-8,-8,16,16);break;case 'circle':ix.beginPath();ix.arc(0,0,9,0,Math.PI*2);ix.fill();break;case 'triangle':ix.beginPath();ix.moveTo(0,-10);ix.lineTo(9,7);ix.lineTo(-9,7);ix.closePath();ix.fill();break;case 'heart':ix.beginPath();ix.moveTo(0,4);ix.bezierCurveTo(-9,-2,-12,6,0,12);ix.bezierCurveTo(12,6,9,-2,0,4);ix.closePath();ix.fill();break;case 'star':{for(let i=0;i<10;i++){const r2=i%2===0?10:4.5,a=i/10*Math.PI*2-Math.PI/2;i===0?ix.moveTo(Math.cos(a)*r2,Math.sin(a)*r2):ix.lineTo(Math.cos(a)*r2,Math.sin(a)*r2);}ix.closePath();ix.fill();break;}case 'diamond':ix.beginPath();ix.moveTo(0,-11);ix.lineTo(8,0);ix.lineTo(0,11);ix.lineTo(-8,0);ix.closePath();ix.fill();break;case 'cross':ix.fillRect(-3,-10,6,20);ix.fillRect(-10,-3,20,6);break;case 'arrow':ix.beginPath();ix.moveTo(0,-10);ix.lineTo(8,2);ix.lineTo(3,2);ix.lineTo(3,10);ix.lineTo(-3,10);ix.lineTo(-3,2);ix.lineTo(-8,2);ix.closePath();ix.fill();break;}ix.restore();const wrap=document.createElement('div');wrap.className='shop-shape-icon';wrap.appendChild(ic);div.appendChild(wrap);const nameEl=document.createElement('div');nameEl.className='shop-name';nameEl.textContent=item.name;div.appendChild(nameEl);}
+    else{const ic=document.createElement('canvas');ic.width=30;ic.height=30;ic.style.cssText='width:30px;height:30px;';const ix=ic.getContext('2d');ix.fillStyle='#fff';ix.save();ix.translate(15,15);switch(item.id){case 'square':ix.fillRect(-8,-8,16,16);break;case 'circle':ix.beginPath();ix.arc(0,0,9,0,Math.PI*2);ix.fill();break;case 'triangle':ix.beginPath();ix.moveTo(0,-10);ix.lineTo(9,7);ix.lineTo(-9,7);ix.closePath();ix.fill();break;case 'heart':ix.beginPath();ix.moveTo(0,4);ix.bezierCurveTo(-9,-2,-12,6,0,12);ix.bezierCurveTo(12,6,9,-2,0,4);ix.closePath();ix.fill();break;case 'star':{for(let i=0;i<10;i++){const r2=i%2===0?10:4.5,a=i/10*Math.PI*2-Math.PI/2;i===0?ix.moveTo(Math.cos(a)*r2,Math.sin(a)*r2):ix.lineTo(Math.cos(a)*r2,Math.sin(a)*r2);}ix.closePath();ix.fill();break;}case 'diamond':ix.beginPath();ix.moveTo(0,-11);ix.lineTo(8,0);ix.lineTo(0,11);ix.lineTo(-8,0);ix.closePath();ix.fill();break;case 'cross':ix.fillRect(-3,-10,6,20);ix.fillRect(-10,-3,20,6);break;case 'arrow':ix.beginPath();ix.moveTo(0,-10);ix.lineTo(8,2);ix.lineTo(3,2);ix.lineTo(3,10);ix.lineTo(-3,10);ix.lineTo(-3,2);ix.lineTo(-8,2);ix.closePath();ix.fill();break;
+        case 'fireball':
+          ix.fillStyle='#ff6600';ix.beginPath();ix.arc(0,0,7,0,Math.PI*2);ix.fill();
+          ix.fillStyle='#ffaa00';for(let i=0;i<6;i++){const fa=i/6*Math.PI*2;ix.beginPath();ix.ellipse(Math.cos(fa)*5,Math.sin(fa)*5,2,9,fa,0,Math.PI*2);ix.fill();}
+          ix.fillStyle='#ffffaa';ix.beginPath();ix.arc(0,0,3,0,Math.PI*2);ix.fill();break;
+        case 'rock':
+          ix.fillStyle='#888';const rp=[[0,-11],[6,-8],[10,-3],[9,4],[4,10],[-4,10],[-10,3],[-10,-2],[-6,-8]];
+          ix.beginPath();rp.forEach(([x,y],i)=>i===0?ix.moveTo(x,y):ix.lineTo(x,y));ix.closePath();ix.fill();
+          ix.strokeStyle='rgba(0,0,0,0.4)';ix.lineWidth=1.2;ix.beginPath();ix.moveTo(-3,-4);ix.lineTo(1,2);ix.moveTo(2,-1);ix.lineTo(-1,5);ix.stroke();break;
+        case 'crystal':
+          ix.fillStyle='#88ddff';ix.beginPath();ix.moveTo(0,-12);ix.lineTo(6,-5);ix.lineTo(6,5);ix.lineTo(0,12);ix.lineTo(-6,5);ix.lineTo(-6,-5);ix.closePath();ix.fill();
+          ix.fillStyle='rgba(255,255,255,0.5)';ix.beginPath();ix.moveTo(0,-9);ix.lineTo(4,-3);ix.lineTo(0,2);ix.lineTo(-4,-3);ix.closePath();ix.fill();break;}ix.restore();const wrap=document.createElement('div');wrap.className='shop-shape-icon';wrap.appendChild(ic);div.appendChild(wrap);const nameEl=document.createElement('div');nameEl.className='shop-name';nameEl.textContent=item.name;div.appendChild(nameEl);}
     if(equipped)div.innerHTML+='<div class="shop-eq-badge">✓</div>';else if(owned)div.innerHTML+='<div class="shop-owned-lbl">OWNED</div>';else div.innerHTML+='<div class="shop-price">🪙 '+item.price+'</div><div class="shop-lock">🔒</div>';
     div.addEventListener('click',()=>{if(owned||item.price===0){if(shopTab==='skins'){currentSkin=item.id;}else{currentShape=item.id;_ownedShapes=ownedShapes;}saveProgress();renderShop();}else if(coins>=item.price){coins-=item.price;if(shopTab==='skins'){ownedSkins.add(item.id);currentSkin=item.id;}else{ownedShapes.add(item.id);currentShape=item.id;}saveProgress();sfx.coin();renderShop();$('shop-coins-val').textContent=coins;$('mm-coins-val').textContent=coins;}else{div.style.borderColor='#ff3060';setTimeout(()=>div.style.borderColor='',500);}});
     grid.appendChild(div);
